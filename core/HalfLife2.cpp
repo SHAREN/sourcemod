@@ -137,6 +137,57 @@ void CHalfLife2::OnSourceModAllInitialized_Post()
 {
 	InitLogicalEntData();
 	InitCommandLine();
+#if SOURCE_ENGINE == SE_CSGO
+	m_CSGOBadList.init();
+	m_CSGOBadList.add("m_iItemDefinitionIndex");
+	m_CSGOBadList.add("m_iEntityLevel");
+	m_CSGOBadList.add("m_iItemIDHigh");
+	m_CSGOBadList.add("m_iItemIDLow");
+	m_CSGOBadList.add("m_iAccountID");
+	m_CSGOBadList.add("m_iEntityQuality");
+	m_CSGOBadList.add("m_bInitialized");
+	m_CSGOBadList.add("m_szCustomName");
+	m_CSGOBadList.add("m_iAttributeDefinitionIndex");
+	m_CSGOBadList.add("m_iRawValue32");
+	m_CSGOBadList.add("m_iRawInitialValue32");
+	m_CSGOBadList.add("m_nRefundableCurrency");
+	m_CSGOBadList.add("m_bSetBonus");
+	m_CSGOBadList.add("m_OriginalOwnerXuidLow");
+	m_CSGOBadList.add("m_OriginalOwnerXuidHigh");
+	m_CSGOBadList.add("m_nFallbackPaintKit");
+	m_CSGOBadList.add("m_nFallbackSeed");
+	m_CSGOBadList.add("m_flFallbackWear");
+	m_CSGOBadList.add("m_nFallbackStatTrak");
+	m_CSGOBadList.add("m_iCompetitiveRanking");
+	m_CSGOBadList.add("m_nActiveCoinRank");
+	m_CSGOBadList.add("m_nMusicID");
+#endif
+}
+
+ConfigResult CHalfLife2::OnSourceModConfigChanged(const char *key, const char *value,
+	ConfigSource source, char *error, size_t maxlength)
+{
+	if (strcasecmp(key, "FollowCSGOServerGuidelines") == 0)
+	{
+#if SOURCE_ENGINE == SE_CSGO
+		if (strcasecmp(value, "no") == 0)
+		{
+			m_bFollowCSGOServerGuidelines = false;
+			return ConfigResult_Accept;
+		}
+		else if (strcasecmp(value, "yes") == 0)
+		{
+			m_bFollowCSGOServerGuidelines = true;
+			return ConfigResult_Accept;
+		}
+
+		return ConfigResult_Reject;
+#else
+		return ConfigResult_Accept;
+#endif
+	}
+
+	return ConfigResult_Ignore;
 }
 
 void CHalfLife2::InitLogicalEntData()
@@ -1233,7 +1284,7 @@ SMFindMapResult CHalfLife2::FindMap(const char *pMapName, char *pFoundMap, size_
 		return SMFindMapResult::FuzzyMatch;
 	}
 
-#elif SOURCE_ENGINE == SE_TF2
+#elif SOURCE_ENGINE == SE_TF2 || SOURCE_ENGINE == SE_BMS
 	static char szTemp[PLATFORM_MAX_PATH];
 	if (pFoundMap == NULL)
 	{
@@ -1272,12 +1323,12 @@ bool CHalfLife2::GetMapDisplayName(const char *pMapName, char *pDisplayname, siz
 		ke::SafeStrcpy(pDisplayname, nMapNameMax, &lastSlashPos[1]);
 		return true;
 	}
-#elif SOURCE_ENGINE == SE_TF2
+#elif SOURCE_ENGINE == SE_TF2 || SOURCE_ENGINE == SE_BMS
 	char *ugcPos;
-	// In TF2, workshop maps show up as workshop/mapname.ugc123456789 regardless of OS
+	// In TF2 and BMS, workshop maps show up as workshop/mapname.ugc123456789 regardless of OS
 	if (strncmp(pDisplayname, "workshop/", 9) == 0 && (ugcPos = strstr(pDisplayname, ".ugc")) != NULL)
 	{
-		// Overwrite the . with a nul and SafeStrcpy will handle the rest
+		// Overwrite the . with a null and SafeStrcpy will handle the rest
 		ugcPos[0] = '\0';
 		ke::SafeStrcpy(pDisplayname, nMapNameMax, &pDisplayname[9]);
 		return true;
